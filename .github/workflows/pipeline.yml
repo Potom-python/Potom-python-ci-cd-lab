@@ -26,7 +26,7 @@ jobs:
           docker run -d --name test -p 8080:80 ci-cd-lab
           sleep 5
 
-      - name: test site
+      - name: smoke test container
         run: |
           set -e
           curl --fail http://localhost:8080
