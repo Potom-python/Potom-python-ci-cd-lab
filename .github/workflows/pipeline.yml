@@ -1,0 +1,59 @@
+
+name: ci-cd-pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  ci:
+    name: ci-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: get files repository
+        uses: actions/checkout@v4
+
+      - name: docker build image
+        run: docker build -t ci-cd-lab .
+
+      - name: run container
+        run: |
+          docker run -d --name test -p 8080:80 ci-cd-lab
+          sleep 5
+
+      - name: test site
+        run: |
+          set -e
+          curl --fail http://localhost:8080
+          echo "OK"
+
+  release:
+    name: release
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: get files repository
+        uses: actions/checkout@v4
+
+      - name: set image name
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/ci-cd-lab" >> "$GITHUB_ENV"
+
+      - name: log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: docker build image
+        run: docker build -t ${{ env.IMAGE_NAME }}:latest .
+
+      - name: push docker image
+        run: docker push ${{ env.IMAGE_NAME }}:latest
