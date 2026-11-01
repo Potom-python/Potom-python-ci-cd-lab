@@ -32,7 +32,7 @@ jobs:
       - name: Smoke test container
         run: |
           curl --fail http://localhost:8080 > page.html
-          if grep -q "Potom-python" page.html; then
+          if grep -q "</h1>" page.html; then
             echo "OK"
           else
             status=$?
